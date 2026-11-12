@@ -1,58 +1,324 @@
 <!DOCTYPE html>
-<html lang="uz">
+<html lang="uz" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>JackWiki — Haqiqiy Bilimlar Bazasi</title>
+    <link rel="icon" type="image/png" href="logo.png">
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class'
+        }
+    </script>
 </head>
-<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-4 md:p-8">
+<body class="bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 min-h-screen flex flex-col font-sans p-4 md:p-8 transition-colors duration-300">
 
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-4xl w-full mx-auto flex-1">
+        <!-- Yuqori panel (Dark/Light rejim) -->
+        <div class="flex justify-end items-center mb-2">
+            <button onclick="toggleTheme()" id="themeBtn" class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500 px-3.5 py-2 rounded-xl text-xs font-medium flex items-center gap-2 shadow-sm transition">
+                <span id="themeIcon">☀️</span> <span id="themeText">Kunduzgi rejim</span>
+            </button>
+        </div>
+
         <!-- Sarlavha -->
-        <header class="text-center py-8">
-            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-semibold">
-                60,000+ Tekshirilgan Maqolalar • API Key Shart Emas
+        <header class="text-center py-6">
+            <span class="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-semibold">
+                60,000+ Tekshirilgan Maqolalar • Sof O'zbekcha Audio
             </span>
-            <h1 class="text-3xl md:text-5xl font-extrabold mt-4 tracking-tight">
-                Jack<span class="text-indigo-500">Wiki</span> Bilimlar Bazasi
-            </h1>
-            <p class="text-slate-400 mt-2 text-sm md:text-base">
+            <div class="flex items-center justify-center gap-3.5 mt-4">
+                <!-- Logo bloki -->
+                <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-emerald-500 flex items-center justify-center font-black text-white text-xl shadow-lg shadow-indigo-500/20 overflow-hidden shrink-0">
+                    <img src="logo.png" alt="JW" class="w-full h-full object-cover" onerror="this.remove()">
+                    <span>JW</span>
+                </div>
+                <h1 class="text-3xl md:text-5xl font-extrabold tracking-tight">
+                    Jack<span class="text-indigo-600 dark:text-indigo-500">Wiki</span> Bilimlar Bazasi
+                </h1>
+            </div>
+            <p class="text-slate-500 dark:text-slate-400 mt-3 text-sm md:text-base">
                 Hohlagan ma'lumotlarni izlang JACK WIKI sizga yordam beradi.
             </p>
         </header>
 
         <!-- Qidiruv paneli -->
-        <form onsubmit="searchWiki(event)" class="flex flex-col sm:flex-row gap-3 mb-8">
-            <select id="langSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500">
+        <form onsubmit="searchWiki(event)" class="flex flex-col sm:flex-row gap-3 mb-4">
+            <select id="langSelect" class="bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500 shadow-sm">
                 <option value="uz">🇺🇿 O'zbekcha</option>
                 <option value="en">🇬🇧 English</option>
                 <option value="ru">🇷🇺 Русский</option>
             </select>
-            <input id="searchInput" type="text" required placeholder="Mavzu yozing (masalan: Amir Temur, Qora tuynuk, Python)..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-indigo-500">
-            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl font-semibold transition">
+
+            <div class="relative flex-1 flex items-center">
+                <input id="searchInput" type="text" required placeholder="Mavzu yozing yoki mikrofonni bosing..." class="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl pl-4 pr-12 py-3 outline-none focus:border-indigo-500 shadow-sm">
+                <button type="button" onclick="startVoiceSearch()" id="micBtn" title="Ovoz bilan qidirish" class="absolute right-2.5 p-2 rounded-lg text-slate-400 hover:text-indigo-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+                    🎤
+                </button>
+            </div>
+
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 text-white px-6 py-3 rounded-xl font-semibold shadow-sm transition">
                 Qidirish
             </button>
         </form>
 
+        <!-- Qidiruv tarixi -->
+        <div id="historyContainer" class="hidden flex-wrap items-center gap-2 mb-3 text-xs">
+            <span class="text-slate-400">🕒 Oxirgi qidiruvlar:</span>
+            <div id="historyList" class="flex flex-wrap gap-1.5"></div>
+            <button onclick="clearHistory()" class="text-rose-500 hover:underline ml-1">Tozalash</button>
+        </div>
+
         <!-- Tezkor mavzular -->
         <div class="flex flex-wrap gap-2 mb-8 text-xs">
-            <span class="text-slate-500 py-1">Sinab ko'ring:</span>
-            <button onclick="quickSearch('Alisher Navoiy')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1 rounded-lg transition">Alisher Navoiy</button>
-            <button onclick="quickSearch('Quyosh sistemasi')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1 rounded-lg transition">Quyosh sistemasi</button>
-            <button onclick="quickSearch('Sun\'iy intellekt')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1 rounded-lg transition">Sun'iy intellekt</button>
-            <button onclick="quickSearch('Boks')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1 rounded-lg transition">Boks</button>
+            <span class="text-slate-400 py-1">Sinab ko'ring:</span>
+            <button onclick="quickSearch('Alisher Navoiy')" class="bg-white dark:bg-slate-900 hover:border-indigo-500 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-lg transition">Alisher Navoiy</button>
+            <button onclick="quickSearch('Quyosh sistemasi')" class="bg-white dark:bg-slate-900 hover:border-indigo-500 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-lg transition">Quyosh sistemasi</button>
+            <button onclick="quickSearch('Sun\'iy intellekt')" class="bg-white dark:bg-slate-900 hover:border-indigo-500 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-lg transition">Sun'iy intellekt</button>
+            <button onclick="quickSearch('Boks')" class="bg-white dark:bg-slate-900 hover:border-indigo-500 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-lg transition">Boks</button>
         </div>
 
         <!-- Natijalar maydoni -->
         <div id="results" class="space-y-4"></div>
     </div>
 
+    <!-- Pastki qism (YouTube obuna tugmasi) -->
+    <footer class="max-w-4xl w-full mx-auto mt-12 pt-6 border-t border-slate-200 dark:border-slate-800/80 flex flex-col items-center justify-center text-center gap-3">
+        <a href="https://www.youtube.com/@mrroblox76" target="_blank" rel="noopener noreferrer" class="group inline-flex items-center gap-3 bg-red-600 hover:bg-red-500 text-white px-6 py-3 rounded-2xl font-semibold text-sm shadow-lg shadow-red-600/25 hover:shadow-red-600/40 transition-all duration-200 active:scale-95">
+            <!-- YouTube ikonka -->
+            <svg class="w-5 h-5 fill-current transition-transform group-hover:scale-110" viewBox="0 0 24 24">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+            </svg>
+            <span>Bizning YouTube kanalga obuna bo'ling</span>
+        </a>
+        <p class="text-xs text-slate-400 dark:text-slate-500">JackWiki • Barcha ma'lumotlar ochiq ensiklopediya manbalaridan olinadi</p>
+    </footer>
+
     <script>
         const resultsDiv = document.getElementById('results');
         const searchInput = document.getElementById('searchInput');
         const langSelect = document.getElementById('langSelect');
+        const micBtn = document.getElementById('micBtn');
+        let currentPagesData = [];
 
+        // Audio oqimi uchun o'zgaruvchilar
+        let currentAudio = null;
+        let speechChunks = [];
+        let currentChunkIndex = 0;
+        let activeCardIndex = null;
+        let isStopped = false;
+
+        // --- 1. DARK / LIGHT REJIM ---
+        function toggleTheme() {
+            const html = document.documentElement;
+            const isDark = html.classList.toggle('dark');
+            localStorage.setItem('jackwiki_theme', isDark ? 'dark' : 'light');
+            updateThemeBtn(isDark);
+        }
+
+        function updateThemeBtn(isDark) {
+            document.getElementById('themeIcon').textContent = isDark ? '☀️' : '🌙';
+            document.getElementById('themeText').textContent = isDark ? 'Kunduzgi rejim' : 'Tungi rejim';
+        }
+
+        if (localStorage.getItem('jackwiki_theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+            updateThemeBtn(false);
+        }
+
+        // --- 2. QIDIRUV TARIXI ---
+        function saveToHistory(query) {
+            let history = JSON.parse(localStorage.getItem('jackwiki_history') || '[]');
+            history = history.filter(item => item.toLowerCase() !== query.toLowerCase());
+            history.unshift(query);
+            if (history.length > 5) history.pop();
+            localStorage.setItem('jackwiki_history', JSON.stringify(history));
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const history = JSON.parse(localStorage.getItem('jackwiki_history') || '[]');
+            const container = document.getElementById('historyContainer');
+            const list = document.getElementById('historyList');
+
+            if (history.length === 0) {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+                return;
+            }
+
+            container.classList.remove('hidden');
+            container.classList.add('flex');
+            list.innerHTML = history.map(item => `
+                <button type="button" onclick="quickSearch('${item.replace(/'/g, "\\'")}')" class="bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-500/20 px-2.5 py-1 rounded-md transition">
+                    ${item}
+                </button>
+            `).join('');
+        }
+
+        function clearHistory() {
+            localStorage.removeItem('jackwiki_history');
+            renderHistory();
+        }
+
+        // --- 3. OVOZLI QIDIRUV ---
+        function startVoiceSearch() {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (!SpeechRecognition) {
+                alert("Brauzeringiz ovozli qidiruvni qo'llab-quvvatlamaydi.");
+                return;
+            }
+
+            const recognition = new SpeechRecognition();
+            const langMap = { uz: 'uz-UZ', en: 'en-US', ru: 'ru-RU' };
+            recognition.lang = langMap[langSelect.value] || 'uz-UZ';
+
+            micBtn.classList.add('animate-pulse', 'text-rose-500');
+            searchInput.placeholder = "Gapiring, eshityapman...";
+
+            recognition.onresult = (event) => {
+                const transcript = event.results[0][0].transcript;
+                searchInput.value = transcript;
+                fetchWikiData(transcript);
+            };
+
+            recognition.onerror = () => {
+                searchInput.placeholder = "Ovoz aniqlanmadi, qayta urining...";
+            };
+
+            recognition.onend = () => {
+                micBtn.classList.remove('animate-pulse', 'text-rose-500');
+                searchInput.placeholder = "Mavzu yozing yoki mikrofonni bosing...";
+            };
+
+            recognition.start();
+        }
+
+        // --- 4. 100% TOZA O'ZBEKCHA OVOZ VA PAUZA TIZIMI ---
+        function splitTextIntoChunks(text, maxLen = 170) {
+            const sentences = text.match(/[^.!?]+[.!?]+|[^.!?]+/g) || [text];
+            const chunks = [];
+            let current = "";
+
+            for (let sentence of sentences) {
+                sentence = sentence.trim();
+                if ((current + " " + sentence).trim().length <= maxLen) {
+                    current = (current + " " + sentence).trim();
+                } else {
+                    if (current) chunks.push(current);
+                    if (sentence.length > maxLen) {
+                        const words = sentence.split(" ");
+                        let temp = "";
+                        for (const w of words) {
+                            if ((temp + " " + w).trim().length <= maxLen) {
+                                temp = (temp + " " + w).trim();
+                            } else {
+                                if (temp) chunks.push(temp);
+                                temp = w;
+                            }
+                        }
+                        current = temp;
+                    } else {
+                        current = sentence;
+                    }
+                }
+            }
+            if (current) chunks.push(current);
+            return chunks;
+        }
+
+        function resetAllAudioUI() {
+            document.querySelectorAll('.audio-controls').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.listen-btn').forEach(el => el.classList.remove('hidden'));
+            activeCardIndex = null;
+        }
+
+        function playNextChunk() {
+            if (isStopped || currentChunkIndex >= speechChunks.length) {
+                resetAllAudioUI();
+                return;
+            }
+
+            const lang = langSelect.value;
+            const chunkText = speechChunks[currentChunkIndex];
+            const ttsUrl = `https://translate.googleapis.com/translate_tts?ie=UTF-8&client=tw-ob&tl=${lang}&q=${encodeURIComponent(chunkText)}`;
+
+            currentAudio = new Audio(ttsUrl);
+            currentAudio.preservesPitch = false;
+            currentAudio.playbackRate = 0.94;
+
+            currentAudio.onended = () => {
+                currentChunkIndex++;
+                playNextChunk();
+            };
+
+            currentAudio.onerror = () => {
+                fallbackBrowserSpeech(chunkText, lang);
+            };
+
+            currentAudio.play().catch(() => {
+                fallbackBrowserSpeech(chunkText, lang);
+            });
+        }
+
+        function fallbackBrowserSpeech(text, lang) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = lang === 'uz' ? 'uz-UZ' : (lang === 'ru' ? 'ru-RU' : 'en-US');
+            utterance.pitch = 0.85;
+            utterance.rate = 0.95;
+            utterance.onend = () => {
+                currentChunkIndex++;
+                playNextChunk();
+            };
+            window.speechSynthesis.speak(utterance);
+        }
+
+        function startSpeech(index) {
+            stopSpeech();
+
+            const page = currentPagesData[index];
+            if (!page || !page.extract) return;
+
+            isStopped = false;
+            activeCardIndex = index;
+            const fullText = `${page.title}. ${page.extract}`;
+            speechChunks = splitTextIntoChunks(fullText);
+            currentChunkIndex = 0;
+
+            document.getElementById(`listen-btn-${index}`).classList.add('hidden');
+            const controls = document.getElementById(`controls-${index}`);
+            controls.classList.remove('hidden');
+            controls.classList.add('flex');
+            document.getElementById(`pause-btn-${index}`).innerHTML = '⏸ Pauza';
+
+            playNextChunk();
+        }
+
+        function togglePause(index) {
+            const pauseBtn = document.getElementById(`pause-btn-${index}`);
+            if (!currentAudio) return;
+
+            if (currentAudio.paused) {
+                currentAudio.play();
+                pauseBtn.innerHTML = '⏸ Pauza';
+            } else {
+                currentAudio.pause();
+                pauseBtn.innerHTML = '▶️ Davom etish';
+            }
+        }
+
+        function stopSpeech() {
+            isStopped = true;
+            if (currentAudio) {
+                currentAudio.pause();
+                currentAudio.currentTime = 0;
+                currentAudio = null;
+            }
+            window.speechSynthesis.cancel();
+            resetAllAudioUI();
+        }
+
+        // --- 5. VIKIPEDIYADAN QIDIRISH ---
         function quickSearch(topic) {
             searchInput.value = topic;
             fetchWikiData(topic);
@@ -65,48 +331,65 @@
         }
 
         async function fetchWikiData(query) {
+            stopSpeech();
+            saveToHistory(query);
             const lang = langSelect.value;
             resultsDiv.innerHTML = `<div class="text-center text-slate-400 py-10">Ma'lumotlar bazasidan qidirilmoqda...</div>`;
 
             try {
-                // Vikipediya API orqali eng mos maqolalarni qidirish
                 const url = `https://${lang}.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=5&prop=extracts|pageimages|info&exintro=1&explaintext=1&exchars=450&pithumbsize=300&inprop=url&format=json&origin=*`;
-                
                 const res = await fetch(url);
                 const data = await res.json();
 
                 if (!data.query || !data.query.pages) {
                     resultsDiv.innerHTML = `
-                        <div class="bg-slate-900 border border-rose-900/50 p-6 rounded-2xl text-center">
-                            <p class="text-rose-400 font-semibold">Aniq ma'lumot topilmadi.</p>
-                            <p class="text-slate-400 text-sm mt-1">So'zni to'g'ri yozganingizni tekshiring yoki boshqa tilda (masalan, English) qidirib ko'ring.</p>
+                        <div class="bg-white dark:bg-slate-900 border border-rose-500/30 p-6 rounded-2xl text-center">
+                            <p class="text-rose-500 font-semibold">Aniq ma'lumot topilmadi.</p>
+                            <p class="text-slate-500 dark:text-slate-400 text-sm mt-1">So'zni to'g'ri yozganingizni tekshiring yoki boshqa tilda qidirib ko'ring.</p>
                         </div>`;
                     return;
                 }
 
-                const pages = Object.values(data.query.pages);
-                resultsDiv.innerHTML = pages.map(page => `
-                    <article class="bg-slate-900 border border-slate-800 hover:border-indigo-500/40 p-6 rounded-2xl flex flex-col sm:flex-row gap-5 transition">
-                        ${page.thumbnail ? `<img src="${page.thumbnail.source}" alt="${page.title}" class="w-full sm:w-32 h-32 object-cover rounded-xl bg-slate-800 shrink-0">` : ''}
+                currentPagesData = Object.values(data.query.pages);
+                resultsDiv.innerHTML = currentPagesData.map((page, index) => `
+                    <article class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-indigo-500/40 p-6 rounded-2xl flex flex-col sm:flex-row gap-5 shadow-sm transition">
+                        ${page.thumbnail ? `<img src="${page.thumbnail.source}" alt="${page.title}" class="w-full sm:w-32 h-32 object-cover rounded-xl bg-slate-100 dark:bg-slate-800 shrink-0">` : ''}
                         <div class="flex-1">
                             <div class="flex justify-between items-start gap-2">
-                                <h2 class="text-xl font-bold text-white">${page.title}</h2>
-                                <span class="text-[11px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded shrink-0">Tasdiqlangan manba</span>
+                                <h2 class="text-xl font-bold">${page.title}</h2>
+                                <span class="text-[11px] bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded shrink-0">Tasdiqlangan manba</span>
                             </div>
-                            <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+                            <p class="text-slate-600 dark:text-slate-300 text-sm mt-2 leading-relaxed">
                                 ${page.extract || "Ushbu mavzu bo'yicha qisqacha matn mavjud emas."}
                             </p>
-                            <a href="${page.fullurl}" target="_blank" class="inline-block mt-4 text-xs text-indigo-400 hover:text-indigo-300 font-semibold">
-                                To'liq maqolani o'qish ↗
-                            </a>
+                            <div class="flex flex-wrap items-center gap-3 mt-4">
+                                <a href="${page.fullurl}" target="_blank" class="text-xs text-indigo-600 dark:text-indigo-400 hover:underline font-semibold mr-2">
+                                    To'liq maqolani o'qish ↗
+                                </a>
+                                
+                                <button id="listen-btn-${index}" onclick="startSpeech(${index})" class="listen-btn text-xs bg-slate-100 dark:bg-slate-800 hover:bg-indigo-500/10 hover:text-indigo-500 px-3 py-1.5 rounded-lg font-medium transition flex items-center gap-1.5">
+                                    🔊 Eshitish
+                                </button>
+
+                                <div id="controls-${index}" class="audio-controls hidden items-center gap-2">
+                                    <button id="pause-btn-${index}" onclick="togglePause(${index})" class="text-xs bg-amber-500/15 text-amber-600 dark:text-amber-400 hover:bg-amber-500/25 px-3 py-1.5 rounded-lg font-medium transition">
+                                        ⏸ Pauza
+                                    </button>
+                                    <button onclick="stopSpeech()" class="text-xs bg-rose-500/15 text-rose-600 dark:text-rose-400 hover:bg-rose-500/25 px-3 py-1.5 rounded-lg font-medium transition">
+                                        ⏹ To'xtatish
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </article>
                 `).join('');
 
             } catch (error) {
-                resultsDiv.innerHTML = `<div class="text-rose-400 text-center py-6">Internet aloqasini tekshiring: ${error.message}</div>`;
+                resultsDiv.innerHTML = `<div class="text-rose-500 text-center py-6">Internet aloqasini tekshiring: ${error.message}</div>`;
             }
         }
+
+        renderHistory();
     </script>
 </body>
 </html>
