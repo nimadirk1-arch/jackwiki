@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JackWiki — Haqiqiy Bilimlar Bazasi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans p-4 md:p-8">
+
+    <div class="max-w-4xl mx-auto">
+        <!-- Sarlavha -->
+        <header class="text-center py-8">
+            <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded-full text-xs font-semibold">
+                60,000,000+ Tekshirilgan Maqolalar • API Key Shart Emas
+            </span>
+            <h1 class="text-3xl md:text-5xl font-extrabold mt-4 tracking-tight">
+                Jack<span class="text-indigo-500">Wiki</span> Bilimlar Bazasi
+            </h1>
+            <p class="text-slate-400 mt-2 text-sm md:text-base">
+                To'g'ridan-to'g'ri Vikipediya bazasidan olingan aniq va yolg'onsiz ma'lumotlar
+            </p>
+        </header>
+
+        <!-- Qidiruv paneli -->
+        <form onsubmit="searchWiki(event)" class="flex flex-col sm:flex-row gap-3 mb-8">
+            <select id="langSelect" class="bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-sm outline-none focus:border-indigo-500">
+                <option value="uz">🇺🇿 O'zbekcha</option>
+                <option value="en">🇬🇧 English</option>
+                <option value="ru">🇷🇺 Русский</option>
+            </select>
+            <input id="searchInput" type="text" required placeholder="Mavzu yozing (masalan: Amir Temur, Qora tuynuk, Python)..." class="flex-1 bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 outline-none focus:border-indigo-500">
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-500 px-6 py-3 rounded-xl font-semibold transition">
+                Qidirish
+            </button>
+        </form>
+
+        <!-- Tezkor mavzular -->
+        <div class="flex flex-wrap gap-2 mb-8 text-xs">
+            <span class="text-slate-500 py-1">Sinab ko'ring:</span>
+            <button onclick="quickSearch('Alisher Navoiy')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1 rounded-lg transition">Alisher Navoiy</button>
+            <button onclick="quickSearch('Quyosh sistemasi')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1 rounded-lg transition">Quyosh sistemasi</button>
+            <button onclick="quickSearch('Sun\'iy intellekt')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1 rounded-lg transition">Sun'iy intellekt</button>
+            <button onclick="quickSearch('Boks')" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 px-3 py-1 rounded-lg transition">Boks</button>
+        </div>
+
+        <!-- Natijalar maydoni -->
+        <div id="results" class="space-y-4"></div>
+    </div>
+
+    <script>
+        const resultsDiv = document.getElementById('results');
+        const searchInput = document.getElementById('searchInput');
+        const langSelect = document.getElementById('langSelect');
+
+        function quickSearch(topic) {
+            searchInput.value = topic;
+            fetchWikiData(topic);
+        }
+
+        function searchWiki(e) {
+            e.preventDefault();
+            const query = searchInput.value.trim();
+            if (query) fetchWikiData(query);
+        }
+
+        async function fetchWikiData(query) {
+            const lang = langSelect.value;
+            resultsDiv.innerHTML = `<div class="text-center text-slate-400 py-10">Ma'lumotlar bazasidan qidirilmoqda...</div>`;
+
+            try {
+                // Vikipediya API orqali eng mos maqolalarni qidirish
+                const url = `https://${lang}.wikipedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}&gsrlimit=5&prop=extracts|pageimages|info&exintro=1&explaintext=1&exchars=450&pithumbsize=300&inprop=url&format=json&origin=*`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+
+                if (!data.query || !data.query.pages) {
+                    resultsDiv.innerHTML = `
+                        <div class="bg-slate-900 border border-rose-900/50 p-6 rounded-2xl text-center">
+                            <p class="text-rose-400 font-semibold">Aniq ma'lumot topilmadi.</p>
+                            <p class="text-slate-400 text-sm mt-1">So'zni to'g'ri yozganingizni tekshiring yoki boshqa tilda (masalan, English) qidirib ko'ring.</p>
+                        </div>`;
+                    return;
+                }
+
+                const pages = Object.values(data.query.pages);
+                resultsDiv.innerHTML = pages.map(page => `
+                    <article class="bg-slate-900 border border-slate-800 hover:border-indigo-500/40 p-6 rounded-2xl flex flex-col sm:flex-row gap-5 transition">
+                        ${page.thumbnail ? `<img src="${page.thumbnail.source}" alt="${page.title}" class="w-full sm:w-32 h-32 object-cover rounded-xl bg-slate-800 shrink-0">` : ''}
+                        <div class="flex-1">
+                            <div class="flex justify-between items-start gap-2">
+                                <h2 class="text-xl font-bold text-white">${page.title}</h2>
+                                <span class="text-[11px] bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded shrink-0">Tasdiqlangan manba</span>
+                            </div>
+                            <p class="text-slate-300 text-sm mt-2 leading-relaxed">
+                                ${page.extract || "Ushbu mavzu bo'yicha qisqacha matn mavjud emas."}
+                            </p>
+                            <a href="${page.fullurl}" target="_blank" class="inline-block mt-4 text-xs text-indigo-400 hover:text-indigo-300 font-semibold">
+                                To'liq maqolani o'qish ↗
+                            </a>
+                        </div>
+                    </article>
+                `).join('');
+
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="text-rose-400 text-center py-6">Internet aloqasini tekshiring: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>
